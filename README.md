@@ -38,9 +38,6 @@ nix run .#all-checks
 # Individual test suites
 nix run .#foo-tests
 nix run .#bar-tests
-
-# Development environment
-nix develop
 ```
 
 ## Demo Steps

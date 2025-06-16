@@ -31,25 +31,6 @@
       forAllSystems = lib.genAttrs [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     in
     {
-      # Development shells - let's start with this to generate the lockfile
-      devShells = forAllSystems (system: {
-        default = let
-          pkgs = nixpkgs.legacyPackages.${system};
-        in pkgs.mkShell {
-          packages = [
-            pkgs.uv
-            pkgs.python311
-          ];
-          
-          shellHook = ''
-            echo "🚀 Checkdef Demo Development Environment"
-            echo ""
-            echo "First run: uv lock  (to generate uv.lock)"
-            echo "Then you can use the other nix commands..."
-          '';
-        };
-      });
-
       packages = forAllSystems (system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
@@ -77,83 +58,57 @@
 
           src = ./.;
 
-        in
-        {
-          default = self.packages.${system}.all-checks;
-
-          foo-tests = checks.pytest-cached {
-            inherit src pythonEnv;
-            name = "foo-tests";
-            description = "Foo module tests (cached)";
-            # Use glob patterns - much simpler and more intuitive!
-            includePatterns = [ 
-              "src/foo/**"          # Include entire foo module
-              "tests/test_foo.py"   # Include foo tests
-              "pyproject.toml"      # Include config
-            ];
-            testDirs = [ "tests/test_foo.py" ];
+          # Define the raw check components first
+          ruffChecks = {
+            ruffCheck = checks.ruff-check { inherit src; };
+            ruffFormat = checks.ruff-format { inherit src; };
           };
 
-          bar-tests = checks.pytest-cached {
-            inherit src pythonEnv;
-            name = "bar-tests"; 
-            description = "Bar module tests (cached)";
-            # Use glob patterns - much simpler and more intuitive!
-            includePatterns = [
-              "src/bar/**"          # Include entire bar module
-              "tests/test_bar.py"   # Include bar tests  
-              "pyproject.toml"      # Include config
-            ];
-            testDirs = [ "tests/test_bar.py" ];
+          fooTestCheck = {
+            fooTests = checks.pytest-cached {
+              inherit src pythonEnv;
+              name = "foo-tests";
+              description = "Foo module tests (cached)";
+              includePatterns = [ 
+                "src/foo/**"
+                "tests/test_foo.py"
+                "pyproject.toml"
+              ];
+              testDirs = [ "tests/test_foo.py" ];
+            };
           };
 
-          # Fast checks (linting, formatting)
-          fast-checks = checks.makeCheckScript {
+          barTestCheck = {
+            barTests = checks.pytest-cached {
+              inherit src pythonEnv;
+              name = "bar-tests"; 
+              description = "Bar module tests (cached)";
+              includePatterns = [
+                "src/bar/**"
+                "tests/test_bar.py"
+                "pyproject.toml"
+              ];
+              testDirs = [ "tests/test_bar.py" ];
+            };
+          };
+
+        in rec {
+          checkdef-demo = pythonSet.checkdef-demo;
+          default = checkdef-demo;
+
+          checklist-foo = fooTestCheck.fooTests;
+          checklist-bar = barTestCheck.barTests;
+
+          checklist-fast = checks.makeCheckScript {
             name = "fast-checks";
-            suiteName = "Fast Checks";
-            scriptChecks = {
-              ruffCheck = checks.ruff-check { inherit src; };
-              ruffFormat = checks.ruff-format { inherit src; };
-            };
+            scriptChecks = ruffChecks;
           };
 
-          # Full checks (includes cached tests)
-          all-checks = checks.makeCheckScript {
+          checklist-all = checks.makeCheckScript {
             name = "all-checks";
-            suiteName = "All Checks";
-            scriptChecks = {
-              ruffCheck = checks.ruff-check { inherit src; };
-              ruffFormat = checks.ruff-format { inherit src; };
-            };
-            derivationChecks = {
-              fooTests = self.packages.${system}.foo-tests;
-              barTests = self.packages.${system}.bar-tests;
-            };
+            scriptChecks = ruffChecks;
+            derivationChecks = fooTestCheck // barTestCheck;
           };
         });
-
-      apps = forAllSystems (system: {
-        default = self.apps.${system}.all-checks;
-        
-        fast-checks = {
-          type = "app";
-          program = "${self.packages.${system}.fast-checks}/bin/fast-checks";
-        };
-        
-        all-checks = {
-          type = "app";
-          program = "${self.packages.${system}.all-checks}/bin/all-checks";
-        };
-
-        foo-tests = {
-          type = "app";
-          program = "${self.packages.${system}.foo-tests}/bin/foo-tests";
-        };
-
-        bar-tests = {
-          type = "app";
-          program = "${self.packages.${system}.bar-tests}/bin/bar-tests";
-        };
-      });
     };
 }
