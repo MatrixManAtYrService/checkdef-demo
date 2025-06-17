@@ -35,7 +35,7 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
 
-          # Load the workspace from uv.lock (once it exists)
+          # Load the workspace from uv.lock
           workspace = uv2nix.lib.workspace.loadWorkspace {
             workspaceRoot = ./.;
           };
@@ -53,61 +53,67 @@
           # Build the Python environment (includes all dependency groups)
           pythonEnv = pythonSet.mkVirtualEnv "dev-env" workspace.deps.all;
 
-          # Get checkdef
+          # provide this project's version of nixpkgs to checkdef
           checks = checkdef.lib pkgs;
 
           src = ./.;
 
-          # Define the raw check components first
           ruffChecks = {
             ruffCheck = checks.ruff-check { inherit src; };
             ruffFormat = checks.ruff-format { inherit src; };
           };
 
-          fooTestCheck = {
-            fooTests = checks.pytest-cached {
-              inherit src pythonEnv;
-              name = "foo-tests";
-              description = "Foo module tests (cached)";
-              includePatterns = [ 
-                "src/foo/**"
-                "tests/test_foo.py"
-                "pyproject.toml"
-              ];
-              testDirs = [ "tests/test_foo.py" ];
-            };
+          fooChecks = checks.pytest-cached {
+            inherit src pythonEnv;
+            name = "foo-tests";
+            description = "Foo module tests (cached)";
+            includePatterns = [
+              "src/foo/**"
+              "tests/test_foo.py"
+              "pyproject.toml"
+            ];
+            testDirs = [ "tests/test_foo.py" ];
           };
 
-          barTestCheck = {
-            barTests = checks.pytest-cached {
-              inherit src pythonEnv;
-              name = "bar-tests"; 
-              description = "Bar module tests (cached)";
-              includePatterns = [
-                "src/bar/**"
-                "tests/test_bar.py"
-                "pyproject.toml"
-              ];
-              testDirs = [ "tests/test_bar.py" ];
-            };
+          barChecks = checks.pytest-cached {
+            inherit src pythonEnv;
+            name = "bar-tests";
+            description = "Bar module tests (cached)";
+            includePatterns = [
+              "src/bar/**"
+              "tests/test_bar.py"
+              "pyproject.toml"
+            ];
+            testDirs = [ "tests/test_bar.py" ];
           };
 
-        in rec {
+        in
+        rec {
           checkdef-demo = pythonSet.checkdef-demo;
           default = checkdef-demo;
 
-          checklist-foo = fooTestCheck.fooTests;
-          checklist-bar = barTestCheck.barTests;
-
-          checklist-fast = checks.makeCheckScript {
-            name = "fast-checks";
+          checklist-linters = checks.runner {
+            name = "linter-checks";
             scriptChecks = ruffChecks;
           };
 
-          checklist-all = checks.makeCheckScript {
+          checklist-foo = checks.runner {
+            name = "foo-checks";
+            derivationChecks = fooChecks;
+          };
+
+          checklist-bar = checks.runner {
+            name = "bar-checks";
+            derivationChecks = barChecks;
+          };
+
+          checklist-all = checks.runner {
             name = "all-checks";
             scriptChecks = ruffChecks;
-            derivationChecks = fooTestCheck // barTestCheck;
+            derivationChecks = {
+              fooTests = fooChecks;
+              barTests = barChecks;
+            };
           };
         });
     };

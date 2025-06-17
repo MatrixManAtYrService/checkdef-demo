@@ -30,21 +30,21 @@ Each module and test intentionally sleeps for 10 seconds to simulate slow operat
 
 ```bash
 # Fast checks (linting only)
-nix run .#fast-checks
+nix run .#checklist-linters
 
 # All checks (linting + tests)  
-nix run .#all-checks
+nix run .#checklist-all
 
 # Individual test suites
-nix run .#foo-tests
-nix run .#bar-tests
+nix run .#checklist-foo
+nix run .#checklist-bar
 ```
 
 ## Demo Steps
 
 1. **First run** (builds everything):
    ```bash
-   time nix run .#all-checks
+   time nix run .#checklist-all
    # Takes ~40+ seconds (building + running all tests)
    ```
 
@@ -55,23 +55,15 @@ nix run .#bar-tests
 
 3. **Run again**:
    ```bash
-   time nix run .#all-checks  
+   time nix run .#checklist-all  
    # Takes ~20 seconds (foo tests rebuild, bar tests cached)
    ```
 
 4. **Modify only bar module**:
    ```bash
    # Edit src/bar/main.py
-   time nix run .#all-checks
+   time nix run .#checklist-all
    # Takes ~20 seconds (bar tests rebuild, foo tests cached) 
    ```
 
-This demonstrates how checkdef's `includePaths` feature enables surgical test execution - only the tests affected by your changes will run, while unaffected tests use cached results.
-
-## Flake Structure
-
-This project shows how to use checkdef in a standalone flake.nix without blueprint:
-- uv2nix for Python dependency management
-- Separate cached test derivations for each module
-- Combined check scripts with both script and derivation checks
-- Proper app definitions for easy execution
+This demonstrates how checkdef's `includePatterns` feature enables surgical test execution - only the tests affected by your changes will run, while unaffected tests report cached results.
