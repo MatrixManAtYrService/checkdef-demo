@@ -1,7 +1,7 @@
 # Speeding up Pytest with Nix
 
 [Checkdef](https://github.com/MatrixManAtYrService/checkdef) is an experimental dev environment consistency check framework.
-It's sorta like [pre-commit](https://pre-commit.com), but [nix](https://nix.dev/manual/nix/2.28/language/index.html](https://nix.dev/tutorials/nix-language)ier.
+It's sorta like [pre-commit](https://pre-commit.com), but [nix](https://nix.dev/tutorials/nix-language)ier.
 
 This repository demonstrates one of its checks, which selectively caches pytest runs.
 
