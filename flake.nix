@@ -66,7 +66,7 @@
           fooChecks = checks.pytest-cached {
             inherit src pythonEnv;
             name = "foo-tests";
-            description = "Foo module tests (cached)";
+            description = "Foo module tests";
             includePatterns = [
               "src/foo/**"
               "tests/test_foo.py"
@@ -78,7 +78,7 @@
           barChecks = checks.pytest-cached {
             inherit src pythonEnv;
             name = "bar-tests";
-            description = "Bar module tests (cached)";
+            description = "Bar module tests";
             includePatterns = [
               "src/bar/**"
               "tests/test_bar.py"

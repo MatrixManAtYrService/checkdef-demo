@@ -25,14 +25,17 @@
         "globset": "globset"
       },
       "locked": {
-        "lastModified": 1750129804,
-        "narHash": "sha256-iHVMUCX5Nt3cN3UIN9a0m5Cum+lJ8W7CSxCOFCbEdbc=",
-        "path": "/Users/matt/src/checkdef",
-        "type": "path"
+        "lastModified": 1750136641,
+        "narHash": "sha256-wnCLUm3P4il909YI70atZQTJOIF8C+pgYsZAODAIdN4=",
+        "owner": "MatrixManAtYrService",
+        "repo": "checkdef",
+        "rev": "ace0a8ad6880627b62d2335de72094d7eb49b5c5",
+        "type": "github"
       },
       "original": {
-        "path": "/Users/matt/src/checkdef",
-        "type": "path"
+        "owner": "MatrixManAtYrService",
+        "repo": "checkdef",
+        "type": "github"
       }
     },
     "globset": {
