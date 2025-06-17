@@ -42,7 +42,7 @@ This wastes a lot of time and money and electricity (locally, and in CI), becaus
 It gets even worse if you try to use tests as guard rails to keep an AI Agent on the right path:
 Either you're waiting forever for tests to run between each change, or today's agent breaks what yesterday's agent built and nobody notices it until after the conversation has moved on and lost the context necessary to fix the problem easily.
 
-## The Checkdef Solution
+## A Segmented Codebase for Smarter Cache Use
 
 We can address this by segmenting the the codebase so that only the relevant tests get a fresh run.
 
