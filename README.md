@@ -1,39 +1,36 @@
 # Checkdef Demo
 
 [Checkdef](https://github.com/MatrixManAtYrService) is an experimental dev environment consistency check framework.
-(It's sorta like [pre-commit](https://pre-commit.com), but nixier.)
+(It's sorta like [pre-commit](https://pre-commit.com), but [nix](https://nix.dev/manual/nix/2.28/language/index.html)ier.)
 
 This repository demonstrates one of its checks, which selectively caches test inputs.
 
 ## A Problem of Cache Granularity
 
+Here are some files in this repo.
+They're not very exciting as python projects go.
+I've added 5 second delays so that it's easier to notice when selective caching speeds things up.
+
 ```
 ├── src/
 │   ├── foo/
-│   │   ├── __init__.py
-│   │   └── main.py          # Slow foo module (5s)
+│   │   └── __init__.py      # prints foo, takes 5s
 │   └── bar/
-│       ├── __init__.py
-│       └── main.py          # Slow bar module (5s)
+│       └── __init__.py      # prints bar, takes 5s
 ├── tests/
-│   ├── test_foo.py          # Slow foo tests (5s)
-│   └── test_bar.py          # Slow bar tests (5s)
-└── flake.nix
+│   ├── test_foo.py          # checks foo, takes 5s
+│   └── test_bar.py          # checks bar, takes 5s
+└── flake.nix                # fun stuff goes here
 ```
-
-`foo` is just a program that prints `foo`.
-`bar` prints `bar`.
-Their tests just assert that they do indeed print those things.
-I've added 5 second delays so that it's easier to notice when selective caching speeds things up.
 
 Normally, every time you run `pytest`, **all** tests would run.
 In this scenario, that would take 20 seconds.
 
 Nix lets you create "derivations" which are recipes for some sandboxed compute operation with known inputs.
-Normally we imagine this as a compiler or a linker operation... something that spits out a piece of software.
+Normally it is used to build a piece of software.
 But it also works for "building" test results.
 
-One benefit to this is that you have precise control over what goes in the sandbox (no more "works on my machine").
+A benefit to this is that you get precise control over what goes in the sandbox (no more "works on my machine").
 But also, since it knows what the derivation's inputs are, nix can notice when they change.
 If the inputs have not changed, nix will skip the compute step and just provide a cached output.
 
@@ -47,7 +44,7 @@ Either you're waiting forever for tests to run between each change, or today's a
 
 ## The Checkdef Solution
 
-We can address this by segmenting the the codebase.
+We can address this by segmenting the the codebase so that only the relevant tests get a fresh run, and test of things that have not changed end up with a cached run.
 
 The code below gives us two sandboxes, each contains just what is necessary for a certain batch of tests.
 Note the use of `includePatterns` below, this is an excerpt from [flake.nix](flake.nix).
@@ -60,7 +57,6 @@ fooChecks = checks.pytest-cached {
   includePatterns = [
     "src/foo/**"
     "tests/test_foo.py"
-    "pyproject.toml"
   ];
   tests = [ "tests/test_foo.py" ];
 };
@@ -72,7 +68,6 @@ barChecks = checks.pytest-cached {
   includePatterns = [
     "src/bar/**"
     "tests/test_bar.py"
-    "pyproject.toml"
   ];
   tests = [ "tests/test_bar.py" ];
 };
@@ -82,8 +77,10 @@ Installing a new package will cause a change to `pythonEnv`, invalidating the ca
 All tests will run and it will take the full 20 seconds.
 
 But a change to `src/foo/__init__.py` will only invalidate the inputs for the `fooChecks` derivation.
-`barChecks` will remain untouchd.
+`barChecks` will remain untouched.
 So in that case, the tests will only take 10 seconds.
+
+It's a 2x speedup in this example, but if you have several sandboxes and your changes are relevant only to one of them, the savings could be significantly greater.
 
 ## The Demo
 

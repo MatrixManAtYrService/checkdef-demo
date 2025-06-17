@@ -1,16 +1,12 @@
-"""Bar module with slow operations."""
-
 import time
 
 
 def get_bar():
-    """Get the bar value (slow operation)."""
-    time.sleep(5)  # Simulate slow operation
+    time.sleep(5)  # Simulate slow program
     return "bar"
 
 
 def main():
-    """Main function that prints bar."""
     result = get_bar()
     print(result)
 
