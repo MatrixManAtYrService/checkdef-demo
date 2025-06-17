@@ -13,7 +13,6 @@ def main():
     """Main function that prints foo."""
     result = get_foo()
     print(result)
-    return result
 
 
 if __name__ == "__main__":

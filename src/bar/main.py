@@ -13,7 +13,6 @@ def main():
     """Main function that prints bar."""
     result = get_bar()
     print(result)
-    return result
 
 
 if __name__ == "__main__":

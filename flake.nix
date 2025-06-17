@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    checkdef.url = "path:/Users/matt/src/checkdef";
+    checkdef.url = "github:MatrixManAtYrService/checkdef";
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -99,12 +99,16 @@
 
           checklist-foo = checks.runner {
             name = "foo-checks";
-            derivationChecks = fooChecks;
+            derivationChecks = {
+              fooTests = fooChecks;
+            };
           };
 
           checklist-bar = checks.runner {
             name = "bar-checks";
-            derivationChecks = barChecks;
+            derivationChecks = {
+              barTests = barChecks;
+            };
           };
 
           checklist-all = checks.runner {
