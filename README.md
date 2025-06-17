@@ -44,7 +44,8 @@ Either you're waiting forever for tests to run between each change, or today's a
 
 ## The Checkdef Solution
 
-We can address this by segmenting the the codebase so that only the relevant tests get a fresh run, and test of things that have not changed end up with a cached run.
+We can address this by segmenting the the codebase so that only the relevant tests get a fresh run.
+Things that are unchanged, just report a cached run.
 
 The code below gives us two sandboxes, each contains just what is necessary for a certain batch of tests.
 Note the use of `includePatterns` below, this is an excerpt from [flake.nix](flake.nix).
