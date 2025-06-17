@@ -30,7 +30,7 @@ Nix lets you create "derivations" which are recipes for some sandboxed compute o
 Normally it is used to build a piece of software.
 But it also works for "building" test results.
 
-A benefit to this is that you get precise control over what goes in the sandbox (no more "works on my machine").
+A benefit to this is that you get precise control over what goes in the sandbox (no more "works on my machine", no more differences between CI and local).
 But also, since it knows what the derivation's inputs are, nix can notice when they change.
 If the inputs have not changed, nix will skip the compute step and just provide a cached output.
 
