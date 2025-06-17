@@ -1,9 +1,9 @@
 # Checkdef Demo
 
 [Checkdef](https://github.com/MatrixManAtYrService) is an experimental dev environment consistency check framework.
-(It's sorta like [pre-commit](https://pre-commit.com), but [nix](https://nix.dev/manual/nix/2.28/language/index.html)ier.)
+It's sorta like [pre-commit](https://pre-commit.com), but [nix](https://nix.dev/manual/nix/2.28/language/index.html)ier.
 
-This repository demonstrates one of its checks, which selectively caches test inputs.
+This repository demonstrates one of its checks, which selectively caches pytest runs.
 
 ## A Problem of Cache Granularity
 
