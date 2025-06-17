@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    checkdef.url = "github:MatrixManAtYrService/checkdef";
+    checkdef.url = "path:/Users/matt/src/checkdef";
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -72,7 +72,7 @@
               "tests/test_foo.py"
               "pyproject.toml"
             ];
-            testDirs = [ "tests/test_foo.py" ];
+            tests = [ "tests/test_foo.py" ];
           };
 
           barChecks = checks.pytest-cached {
@@ -84,7 +84,7 @@
               "tests/test_bar.py"
               "pyproject.toml"
             ];
-            testDirs = [ "tests/test_bar.py" ];
+            tests = [ "tests/test_bar.py" ];
           };
 
         in
