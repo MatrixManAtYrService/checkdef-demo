@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    checkdef.url = "github:MatrixManAtYrService/checkdef";
+    checkdef.url = "path:/Users/matt/src/checkdef";
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -23,9 +23,13 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
+    globset = {
+      url = "github:pdtpartners/globset";
+      inputs.nixpkgs-lib.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, checkdef, pyproject-nix, uv2nix, pyproject-build-systems }:
+  outputs = { self, nixpkgs, checkdef, pyproject-nix, uv2nix, pyproject-build-systems, globset }:
     let
       inherit (nixpkgs) lib;
       forAllSystems = lib.genAttrs [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -33,7 +37,10 @@
     {
       packages = forAllSystems (system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          overlay = final: prev: {
+            globset = globset;
+          };
+          pkgs = (nixpkgs.legacyPackages.${system}).extend overlay;
 
           # Load the workspace from uv.lock
           workspace = uv2nix.lib.workspace.loadWorkspace {
@@ -54,16 +61,16 @@
           pythonEnv = pythonSet.mkVirtualEnv "dev-env" workspace.deps.all;
 
           # provide this project's version of nixpkgs to checkdef
-          checks = checkdef.lib pkgs;
+          checkdefLib = checkdef.lib pkgs;
 
           src = ./.;
 
           ruffChecks = {
-            ruffCheck = checks.ruff-check { inherit src; };
-            ruffFormat = checks.ruff-format { inherit src; };
+            ruffCheck = checkdefLib.ruff-check { inherit src; };
+            ruffFormat = checkdefLib.ruff-format { inherit src; };
           };
 
-          fooChecks = checks.pytest-cached {
+          fooChecks = checkdefLib.pytest-cached {
             inherit src pythonEnv;
             name = "foo-tests";
             description = "Foo module tests";
@@ -74,7 +81,7 @@
             tests = [ "tests/test_foo.py" ];
           };
 
-          barChecks = checks.pytest-cached {
+          barChecks = checkdefLib.pytest-cached {
             inherit src pythonEnv;
             name = "bar-tests";
             description = "Bar module tests";
@@ -90,26 +97,33 @@
           checkdef-demo = pythonSet.checkdef-demo;
           default = checkdef-demo;
 
-          checklist-linters = checks.runner {
+          # Expose test derivations for direct access
+          foo-tests = fooChecks;
+          foo-tests-verbose = fooChecks.passthru.verbose;
+          bar-tests = barChecks;
+          bar-tests-verbose = barChecks.passthru.verbose;
+
+          checklist-linters = checkdefLib.runner {
             name = "linter-checks";
             scriptChecks = ruffChecks;
           };
 
-          checklist-foo = checks.runner {
+          checklist-foo = checkdefLib.runner {
             name = "foo-checks";
+            suiteName = "foo-checks";
             derivationChecks = {
               fooTests = fooChecks;
             };
           };
 
-          checklist-bar = checks.runner {
+          checklist-bar = checkdefLib.runner {
             name = "bar-checks";
             derivationChecks = {
               barTests = barChecks;
             };
           };
 
-          checklist-all = checks.runner {
+          checklist-all = checkdefLib.runner {
             name = "all-checks";
             scriptChecks = ruffChecks;
             derivationChecks = {
