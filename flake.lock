@@ -26,55 +26,35 @@
         "globset": "globset"
       },
       "locked": {
-        "lastModified": 1750368958,
-        "narHash": "sha256-a1D6QJcJyLlFdCxSZKkd9k0wApBkbX/HohJtz+y+yj4=",
-        "path": "/Users/matt/src/checkdef",
-        "type": "path"
+        "lastModified": 1750393962,
+        "narHash": "sha256-3pZno2v5XHR3VZ6wPVKEsuteu6lecEdNvbRxDIeSjqA=",
+        "owner": "MatrixManAtYrService",
+        "repo": "checkdef",
+        "rev": "d26a5f90638497e0258a4bbd15f9461d28f2cbbf",
+        "type": "github"
       },
       "original": {
-        "path": "/Users/matt/src/checkdef",
-        "type": "path"
+        "owner": "MatrixManAtYrService",
+        "repo": "checkdef",
+        "type": "github"
       }
     },
     "checkdef-demo": {
       "flake": false,
       "locked": {
-        "lastModified": 1750303537,
-        "narHash": "sha256-SpWPxaXFKksnjLTfNR6CUT8XjxTu2ENdfSn0PlCsNCg=",
-        "owner": "MatrixManAtYrService",
-        "repo": "checkdef-demo",
-        "rev": "34e7ba8786bd9612f29a409d94fef7d2b6ff41e1",
-        "type": "github"
+        "lastModified": 1750391271,
+        "narHash": "sha256-RbQFkQRY40V23TH6ELYOeW3TC7h+VIhWUf3Kf0DGri8=",
+        "path": "/Users/matt/src/checkdef-demo",
+        "type": "path"
       },
       "original": {
-        "owner": "MatrixManAtYrService",
-        "repo": "checkdef-demo",
-        "type": "github"
+        "path": "/Users/matt/src/checkdef-demo",
+        "type": "path"
       }
     },
     "globset": {
       "inputs": {
         "nixpkgs-lib": "nixpkgs-lib"
-      },
-      "locked": {
-        "lastModified": 1744379919,
-        "narHash": "sha256-ieaQegt7LdMDFweeHhRaUQFYyF0U3pWD/XiCvq5L5U8=",
-        "owner": "pdtpartners",
-        "repo": "globset",
-        "rev": "4e21c96ab1259b8cd864272f96a8891b589c8eda",
-        "type": "github"
-      },
-      "original": {
-        "owner": "pdtpartners",
-        "repo": "globset",
-        "type": "github"
-      }
-    },
-    "globset_2": {
-      "inputs": {
-        "nixpkgs-lib": [
-          "nixpkgs"
-        ]
       },
       "locked": {
         "lastModified": 1744379919,
@@ -186,7 +166,6 @@
     "root": {
       "inputs": {
         "checkdef": "checkdef",
-        "globset": "globset_2",
         "nixpkgs": "nixpkgs_2",
         "pyproject-build-systems": "pyproject-build-systems",
         "pyproject-nix": "pyproject-nix",

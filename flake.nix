@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    checkdef.url = "path:/Users/matt/src/checkdef";
+    checkdef.url = "github:MatrixManAtYrService/checkdef";
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -23,13 +23,9 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
-    globset = {
-      url = "github:pdtpartners/globset";
-      inputs.nixpkgs-lib.follows = "nixpkgs";
-    };
   };
 
-  outputs = { self, nixpkgs, checkdef, pyproject-nix, uv2nix, pyproject-build-systems, globset }:
+  outputs = { self, nixpkgs, checkdef, pyproject-nix, uv2nix, pyproject-build-systems }:
     let
       inherit (nixpkgs) lib;
       forAllSystems = lib.genAttrs [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -37,92 +33,69 @@
     {
       packages = forAllSystems (system:
         let
-          overlay = final: prev: {
-            globset = globset;
-          };
-          pkgs = (nixpkgs.legacyPackages.${system}).extend overlay;
-          # Build a Python environment with just the dependencies, not the source
-          # This is the KEY change - we build the env without the local source
-          pythonEnv = pkgs.python311.withPackages (ps: with ps; [
-            pytest
-            # Add any other dependencies your tests need here
-          ]);
+          pkgs = nixpkgs.legacyPackages.${system};
 
-          # provide this project's version of nixpkgs to checkdef
-          checkdefLib = checkdef.lib pkgs;
-
-          src = ./.;
-
-          # Helper function to create filtered source
-          filterSource = patterns: src:
+          # Define a function that builds the python environment
+          # the parameter is some subset of the whole src for this repo
+          # (this lets us lean on the nix store to avoid checking again what has already been checked)
+          buildPythonEnv = filteredSrc:
             let
-              # Convert glob patterns to regex patterns
-              globToRegex = pattern:
-                builtins.replaceStrings
-                  ["**" "*" "?"]
-                  [".*" "[^/]*" "."]
-                  pattern;
-              
-              # Check if path matches any pattern
-              matchesAnyPattern = path: 
-                let
-                  relPath = lib.removePrefix (toString src + "/") (toString path);
-                in
-                  lib.any (pattern: 
-                    builtins.match (globToRegex pattern) relPath != null
-                  ) patterns;
-            in
-              lib.cleanSourceWith {
-                inherit src;
-                filter = path: type:
-                  let
-                    relPath = lib.removePrefix (toString src + "/") (toString path);
-                    baseName = builtins.baseNameOf path;
-                  in
-                    # Always include directories for traversal
-                    type == "directory" ||
-                    # Include files matching patterns (this will handle module-specific files)
-                    matchesAnyPattern path ||
-                    # Include common Python config files at root
-                    (baseName == "pyproject.toml" && relPath == "pyproject.toml") ||
-                    (baseName == "setup.py" && relPath == "setup.py") ||
-                    (baseName == "setup.cfg" && relPath == "setup.cfg") ||
-                    (baseName == "uv.lock" && relPath == "uv.lock") ||
-                    # Include src/__init__.py specifically (needed for Python to recognize src as a package)
-                    (relPath == "src/__init__.py");
+              workspace = uv2nix.lib.workspace.loadWorkspace {
+                workspaceRoot = filteredSrc;
               };
 
+              pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
+                python = pkgs.python311;
+              }).overrideScope (
+                lib.composeManyExtensions [
+                  pyproject-build-systems.overlays.default
+                  (workspace.mkPyprojectOverlay { sourcePreference = "wheel"; })
+                ]
+              );
+            in
+              pythonSet.mkVirtualEnv "dev-env" workspace.deps.all;
+
+          # provide this project's version of nixpkgs to checkdef
+          checks = checkdef.lib pkgs;
+
+          # some checks are so fast they can just get the whole source tree
+          # not much is gained by memoizing these
+          src = ./.;
           ruffChecks = {
-            ruffCheck = checkdefLib.ruff-check { inherit src; };
-            ruffFormat = checkdefLib.ruff-format { inherit src; };
+            ruffCheck = checks.ruff-check { inherit src; };
+            ruffFormat = checks.ruff-format { inherit src; };
           };
 
-          fooChecks = checkdefLib.pytest-cached {
-            # Filter source to only include foo-related files
-            src = filterSource [
-              "src/foo/.*"
-              "tests/test_foo.py"
-            ] ./.;
-            inherit pythonEnv;
+          # other checks are slow enough that you really don't want them running unless their inputs have changed
+          # use includePatters to determine which files are this check's inputs
+          # Supposing it is run as a derivationCheck, files not indicated here will not be present in the sandbox
+          # where this check runs
+          foo-tests = checks.pytest-env-builder {
+            inherit src;
+            envBuilder = buildPythonEnv;
             name = "foo-tests";
             description = "Foo module tests";
+            includePatterns = [
+              "src/foo/**"
+              "tests/test_foo.py"
+            ];
             tests = [ "tests/test_foo.py" ];
             testConfig = {
-              # Add src to PYTHONPATH so imports work
               extraEnvVars = {
                 PYTHONPATH = "src";
               };
             };
           };
 
-          barChecks = checkdefLib.pytest-cached {
-            # Filter source to only include bar-related files
-            src = filterSource [
-              "src/bar/.*"
-              "tests/test_bar.py"
-            ] ./.;            inherit pythonEnv;
+          bar-tests = checks.pytest-env-builder {
+            inherit src;
+            envBuilder = buildPythonEnv;
             name = "bar-tests";
             description = "Bar module tests";
+            includePatterns = [
+              "src/bar/**"
+              "tests/test_bar.py"
+            ];
             tests = [ "tests/test_bar.py" ];
             testConfig = {
               extraEnvVars = {
@@ -133,48 +106,51 @@
 
         in
         rec {
-          # Note: we can't use pythonSet.checkdef-demo anymore since we're not using uv2nix workspace
-          checkdef-demo = pkgs.stdenv.mkDerivation {
-            pname = "checkdef-demo";
-            version = "0.1.0";
-            src = ./.;
-            # Just a placeholder derivation
-            installPhase = "mkdir -p $out";
+          # Build the actual Python packages from the workspace
+          workspace = uv2nix.lib.workspace.loadWorkspace {
+            workspaceRoot = src;
           };
+
+          pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
+            python = pkgs.python311;
+          }).overrideScope (
+            lib.composeManyExtensions [
+              pyproject-build-systems.overlays.default
+              (workspace.mkPyprojectOverlay { sourcePreference = "wheel"; })
+            ]
+          );
+
+          # The main checkdef-demo package containing foo and bar modules
+          checkdef-demo = pythonSet.checkdef-demo;
           default = checkdef-demo;
 
-          # Expose test derivations for direct access
-          foo-tests = fooChecks;
-          foo-tests-verbose = fooChecks.passthru.verbose;
-          bar-tests = barChecks;
-          bar-tests-verbose = barChecks.passthru.verbose;
+          # Also expose the development environment
+          fullEnv = buildPythonEnv src;
 
-          checklist-linters = checkdefLib.runner {
-            name = "linter-checks";
+          checklist-linters = checks.runner {
+            name = "checklist-linters";
             scriptChecks = ruffChecks;
           };
 
-          checklist-foo = checkdefLib.runner {
-            name = "foo-checks";
-            suiteName = "foo-checks";
+          checklist-foo = checks.runner {
+            name = "checklist-foo";
             derivationChecks = {
-              fooTests = fooChecks;
+              inherit foo-tests;
             };
           };
 
-          checklist-bar = checkdefLib.runner {
-            name = "bar-checks";
+          checklist-bar = checks.runner {
+            name = "checklist-bar";
             derivationChecks = {
-              barTests = barChecks;
+              inherit bar-tests;
             };
           };
 
-          checklist-all = checkdefLib.runner {
-            name = "all-checks";
+          checklist-all = checks.runner {
+            name = "checklist-all";
             scriptChecks = ruffChecks;
             derivationChecks = {
-              fooTests = fooChecks;
-              barTests = barChecks;
+              inherit foo-tests bar-tests;
             };
           };
         });
