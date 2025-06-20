@@ -50,8 +50,27 @@ The code below gives us two sandboxes, each contains just what is necessary for 
 Note the use of `includePatterns` below, this is an excerpt from [flake.nix](flake.nix).
 
 ```nix
-fooChecks = checks.pytest-cached {
-  inherit src pythonEnv;
+# Define your environment builder function
+buildPythonEnv = filteredSrc:
+  let
+    workspace = uv2nix.lib.workspace.loadWorkspace {
+      workspaceRoot = filteredSrc;
+    };
+    pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
+      python = pkgs.python311;
+    }).overrideScope (
+      lib.composeManyExtensions [
+        pyproject-build-systems.overlays.default
+        (workspace.mkPyprojectOverlay { sourcePreference = "wheel"; })
+      ]
+    );
+  in
+    pythonSet.mkVirtualEnv "dev-env" workspace.deps.all;
+
+# Use the same builder with different filters for cache isolation
+foo-tests = checks.pytest-env-builder {
+  inherit src;
+  envBuilder = buildPythonEnv;
   name = "foo-tests";
   description = "Foo module tests";
   includePatterns = [
@@ -59,31 +78,55 @@ fooChecks = checks.pytest-cached {
     "tests/test_foo.py"
   ];
   tests = [ "tests/test_foo.py" ];
+  testConfig = {
+    extraEnvVars = {
+      PYTHONPATH = "src";
+    };
+  };
 };
 
-barChecks = checks.pytest-cached {
-  inherit src pythonEnv;
+bar-tests = checks.pytest-env-builder {
+  inherit src;
+  envBuilder = buildPythonEnv;
   name = "bar-tests";
   description = "Bar module tests";
   includePatterns = [
-    "src/bar/**"
-    "tests/test_bar.py"
+    "src/bar/**"           # Include all bar source files
+    "tests/test_bar.py"    # Include bar test file
   ];
   tests = [ "tests/test_bar.py" ];
+  testConfig = {
+    extraEnvVars = {
+      PYTHONPATH = "src";
+    };
+  };
 };
 ```
 
-Installing a new package will cause a change to `pythonEnv`, invalidating the cache for both checks.
-All tests will run and it will take the full 20 seconds.
+Installing a new package will change `uv.lock` and will invalidate the cache for both checks.
+Running all tests will take the full 20 seconds or so.
 
-But a change to `src/foo/__init__.py` will only invalidate the inputs for the `fooChecks` derivation.
-`barChecks` will remain untouched.
+But a change to `src/foo/__init__.py` will only invalidate the inputs for the `foo-tests` derivation.
+`bar-tests` will remain untouched.
 So in that case, the tests will only take 10 seconds.
 
-It's a 2x speedup in this example, but if you have several sandboxes and your changes are relevant only to one of them, the savings could be significantly greater.
+It's a 2x speedup in this example, but if you have several test suites and your changes are relevant only to one of them, the savings could be significantly greater.
+
+## CLI Usage
+
+```bash
+# Run individual test suites
+nix run .#checklist-foo
+nix run .#checklist-bar
+
+# Run all checks (linters + tests)
+nix run .#checklist-all
+
+# Use verbose mode to see detailed execution info
+nix run .#checklist-foo -- -v
+```
 
 ## The Demo
 
 We can see this in action in the video below:
 ![checkdef-demo](demo.gif)
-
