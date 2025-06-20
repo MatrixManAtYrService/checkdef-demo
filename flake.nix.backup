@@ -3,7 +3,8 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    checkdef.url = "path:/Users/matt/src/checkdef";
+    #checkdef.url = "github:MatrixManAtYrService/checkdef";
+    checkdef.url= "path:/Users/matt/src/checkdef";
     pyproject-nix = {
       url = "github:pyproject-nix/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -41,12 +42,44 @@
             globset = globset;
           };
           pkgs = (nixpkgs.legacyPackages.${system}).extend overlay;
-          # Build a Python environment with just the dependencies, not the source
-          # This is the KEY change - we build the env without the local source
-          pythonEnv = pkgs.python311.withPackages (ps: with ps; [
-            pytest
-            # Add any other dependencies your tests need here
-          ]);
+
+          # Load the workspace from uv.lock
+          # Filter workspace root to only include necessary files for dependency resolution
+          workspaceRoot = lib.cleanSourceWith {
+            src = ./.;
+            filter = path: type:
+              let
+                baseName = builtins.baseNameOf path;
+                relPath = lib.removePrefix (toString ./. + "/") (toString path);
+              in
+                # Include directories for traversal
+                type == "directory" ||
+                # Include files needed for Python environment setup
+                baseName == "pyproject.toml" ||
+                baseName == "uv.lock" ||
+                baseName == "setup.py" ||
+                baseName == "setup.cfg" ||
+                baseName == "requirements.txt" ||
+                # Include src/__init__.py for package detection
+                relPath == "src/__init__.py";
+          };
+          
+          workspace = uv2nix.lib.workspace.loadWorkspace {
+            inherit workspaceRoot;
+          };
+
+          # Create the python package set
+          pythonSet = (pkgs.callPackage pyproject-nix.build.packages {
+            python = pkgs.python311;
+          }).overrideScope (
+            lib.composeManyExtensions [
+              pyproject-build-systems.overlays.default
+              (workspace.mkPyprojectOverlay { sourcePreference = "wheel"; })
+            ]
+          );
+
+          # Build the Python environment (includes all dependency groups)
+          pythonEnv = pythonSet.mkVirtualEnv "dev-env" workspace.deps.all;
 
           # provide this project's version of nixpkgs to checkdef
           checkdefLib = checkdef.lib pkgs;
@@ -81,15 +114,15 @@
                   in
                     # Always include directories for traversal
                     type == "directory" ||
-                    # Include files matching patterns (this will handle module-specific files)
+                    # Include files matching patterns
                     matchesAnyPattern path ||
-                    # Include common Python config files at root
-                    (baseName == "pyproject.toml" && relPath == "pyproject.toml") ||
-                    (baseName == "setup.py" && relPath == "setup.py") ||
-                    (baseName == "setup.cfg" && relPath == "setup.cfg") ||
-                    (baseName == "uv.lock" && relPath == "uv.lock") ||
-                    # Include src/__init__.py specifically (needed for Python to recognize src as a package)
-                    (relPath == "src/__init__.py");
+                    # Include common Python config files
+                    baseName == "pyproject.toml" ||
+                    baseName == "setup.py" ||
+                    baseName == "setup.cfg" ||
+                    baseName == "uv.lock" ||
+                    # Include __init__.py files in src directory
+                    (lib.hasPrefix "src/" relPath && baseName == "__init__.py");
               };
 
           ruffChecks = {
@@ -100,47 +133,34 @@
           fooChecks = checkdefLib.pytest-cached {
             # Filter source to only include foo-related files
             src = filterSource [
-              "src/foo/.*"
-              "tests/test_foo.py"
+              "src/__init__.py"      # Package root
+              "src/foo/.*"           # Foo module
+              "tests/test_foo.py"    # Foo tests
+              "tests/__init__.py"    # Tests package (if exists)
             ] ./.;
             inherit pythonEnv;
             name = "foo-tests";
             description = "Foo module tests";
             tests = [ "tests/test_foo.py" ];
-            testConfig = {
-              # Add src to PYTHONPATH so imports work
-              extraEnvVars = {
-                PYTHONPATH = "src";
-              };
-            };
           };
 
           barChecks = checkdefLib.pytest-cached {
             # Filter source to only include bar-related files
             src = filterSource [
-              "src/bar/.*"
-              "tests/test_bar.py"
-            ] ./.;            inherit pythonEnv;
+              "src/__init__.py"      # Package root
+              "src/bar/.*"           # Bar module
+              "tests/test_bar.py"    # Bar tests
+              "tests/__init__.py"    # Tests package (if exists)
+            ] ./.;
+            inherit pythonEnv;
             name = "bar-tests";
             description = "Bar module tests";
             tests = [ "tests/test_bar.py" ];
-            testConfig = {
-              extraEnvVars = {
-                PYTHONPATH = "src";
-              };
-            };
           };
 
         in
         rec {
-          # Note: we can't use pythonSet.checkdef-demo anymore since we're not using uv2nix workspace
-          checkdef-demo = pkgs.stdenv.mkDerivation {
-            pname = "checkdef-demo";
-            version = "0.1.0";
-            src = ./.;
-            # Just a placeholder derivation
-            installPhase = "mkdir -p $out";
-          };
+          checkdef-demo = pythonSet.checkdef-demo;
           default = checkdef-demo;
 
           # Expose test derivations for direct access

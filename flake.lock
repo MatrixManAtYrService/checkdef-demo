@@ -22,19 +22,33 @@
     "checkdef": {
       "inputs": {
         "blueprint": "blueprint",
+        "checkdef-demo": "checkdef-demo",
         "globset": "globset"
       },
       "locked": {
-        "lastModified": 1750224892,
-        "narHash": "sha256-mkTrtXiYIWCtSFR1pSXxgF9csp3/IDHexDCTD5WckiI=",
+        "lastModified": 1750368958,
+        "narHash": "sha256-a1D6QJcJyLlFdCxSZKkd9k0wApBkbX/HohJtz+y+yj4=",
+        "path": "/Users/matt/src/checkdef",
+        "type": "path"
+      },
+      "original": {
+        "path": "/Users/matt/src/checkdef",
+        "type": "path"
+      }
+    },
+    "checkdef-demo": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1750303537,
+        "narHash": "sha256-SpWPxaXFKksnjLTfNR6CUT8XjxTu2ENdfSn0PlCsNCg=",
         "owner": "MatrixManAtYrService",
-        "repo": "checkdef",
-        "rev": "cc4a457b6d44ec6eb9410a1957fc181e2e327470",
+        "repo": "checkdef-demo",
+        "rev": "34e7ba8786bd9612f29a409d94fef7d2b6ff41e1",
         "type": "github"
       },
       "original": {
         "owner": "MatrixManAtYrService",
-        "repo": "checkdef",
+        "repo": "checkdef-demo",
         "type": "github"
       }
     },
