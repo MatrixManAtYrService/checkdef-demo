@@ -51,7 +51,7 @@ The code below gives us two derivations, each with only a few files as their inp
 Note the use of `includePatterns` below, this is an excerpt from [flake.nix](flake.nix).
 
 ```nix
-# Define your environment builder function
+# Define an environment builder function
 buildPythonEnv = filteredSrc:
   let
     workspace = uv2nix.lib.workspace.loadWorkspace {
