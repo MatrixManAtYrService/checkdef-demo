@@ -31,9 +31,9 @@ Normally they are used to build a piece of software.
 Here we'll use them to build test results.
 
 The way that nix tracks derivation inputs prevents suprise dependencies (less "works on my machine").
-Also since nix notices when the inputs changed, it can sometime skip the compute step entirely and just provide a cached output.
+Also since nix notices when the inputs changed, it can sometimes skip the compute step entirely and just provide a cached result.
 
-So building these test results from a derivation that takes the whole repo as an input, will take at least 20 seconds.
+So building these test results from a derivation that takes the whole repo as an input will take at least 20 seconds.
 Subsequent runs wrill be very fast, until we make a change.
 Then it will take 20 seconds all over again, even if the change was small.
 
