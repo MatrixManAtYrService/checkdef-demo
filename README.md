@@ -28,7 +28,7 @@ During a typical `pytest` run, all four of these delays would accumulate: it wou
 
 Nix derivations are recipes for some sandboxed compute operation with known inputs.
 Normally they are used to build a piece of software.
-Here we'll use them to "build" test results.
+Here we'll use them to build test results.
 
 The way that nix tracks derivation inputs prevents suprise dependencies (less "works on my machine").
 Also since nix notices when the inputs changed, it can sometime skip the compute step entirely and just provide a cached output.
