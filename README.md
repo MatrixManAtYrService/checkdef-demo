@@ -131,5 +131,14 @@ nix run .#checklist-foo -- -v
 
 ## The Demo
 
-We can see this in action in the video below:
+We can see this in action in the video below.
+It starts with both foo and bar cached, so they "run" very quickly.
+Then we make a change to one of foo's source files.
+Bar still runs quickly, but foo build fresh results for us.
+
 ![checkdef-demo](demo.gif)
+
+## TODO
+
+ - nix hides the test output until the build has finished, fix this
+ - use [modulefinder](https://docs.python.org/3/library/modulefinder.html) to determine a test module's imports, and use [dynamic derivations](https://fzakaria.com/2025/03/10/an-early-look-at-nix-dynamic-derivations) to auto-discover the necessary inputs, rather than requiring the user to define them
