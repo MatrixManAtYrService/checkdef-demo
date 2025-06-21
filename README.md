@@ -24,7 +24,7 @@ I've added 5 second delays to each of the python files.
 └── flake.nix                # fun stuff goes here
 ```
 
-During a typical `pytest` run, all four of these five second delays would accumulate: it would take twenty seconds at least.
+During a typical `pytest` run, all four of these delays would accumulate: it would take at least 20 seconds.
 
 Nix derivations are recipes for some sandboxed compute operation with known inputs.
 Normally they are used to build a piece of software.
@@ -33,9 +33,9 @@ Here we'll use them to "build" test results.
 The way that nix tracks derivation inputs prevents suprise dependencies (less "works on my machine").
 Also since nix notices when the inputs changed, it can sometime skip the compute step entirely and just provide a cached output.
 
-So if these tests run in a derivation that takes all of the python files as an input, they'll take at least twenty seconds.
+So building these test results from a derivation that takes the whole repo as an input, will take at least 20 seconds.
 Subsequent runs wrill be very fast, until we make a change.
-Then it will take twenty seconds all over again, even if the change was small.
+Then it will take 20 seconds all over again, even if the change was small.
 
 This wastes a lot of time and money and electricity because so much is spent on testing now what has not changed since it was tested last time.
 It gets even worse if you try to use tests as guard rails to keep an AI Agent on the right path:
