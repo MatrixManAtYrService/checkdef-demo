@@ -5,6 +5,7 @@ It's sorta like [pre-commit](https://pre-commit.com), but [nix](https://nix.dev/
 
 This repository demonstrates one of its checks, which selectively caches pytest runs.
 The goal is to only run the tests that might be impacted by a change instead of running all of them each time.
+Pytest is used as an example here, but this approach is widely applicable.
 
 ## Entire Repo as a Derivation Input
 
