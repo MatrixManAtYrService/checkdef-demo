@@ -10,7 +10,6 @@ Pytest is used as an example here, but this approach is widely applicable.
 ## Entire Repo as a Derivation Input
 
 Here are some of the files in this repo.
-They're not very exciting as python projects go.
 I've added 5 second delays to each of the python files.
 
 ```
