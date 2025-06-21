@@ -6,8 +6,7 @@ It's sorta like [pre-commit](https://pre-commit.com), but [nix](https://nix.dev/
 This repository demonstrates one of its checks, which selectively caches pytest runs.
 The goal is to only run the tests that might be impacted by a change instead of running all of them each time.
 
-## Entire Repo as a Derivation Input
-#### (the naive approach) 
+### Entire Repo as a Derivation Input (the naive approach) 
 
 Here are some of the files in this repo.
 They're not very exciting as python projects go.
@@ -42,8 +41,7 @@ This wastes a lot of time and money and electricity because so much is spent on 
 It gets even worse if you try to use tests as guard rails to keep an AI Agent on the right path:
 Either you're waiting forever for tests to run between each change, or today's agent breaks what yesterday's agent built and nobody notices it until after the conversation has moved on and lost the context necessary to fix the problem easily.
 
-## A Segmented Codebase for Smarter Cache Use
-#### (more efficient)
+### A Segmented Codebase for Smarter Cache Use
 
 We can address this by segmenting the the codebase so that a change causes only the relevant tests to run afresh.
 
