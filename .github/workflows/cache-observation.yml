@@ -18,8 +18,8 @@ jobs:
     - name: Restore and save Nix store
       uses: nix-community/cache-nix-action@v6
       with:
-        primary-key: nix-${{ runner.os }}
-        restore-prefixes-first-match: nix-${{ runner.os }}
+        primary-key: nix-store
+        restore-prefixes-first-match: nix-store
         
     - name: Run 1 - Measure initial build time
       run: |
