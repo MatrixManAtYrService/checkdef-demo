@@ -20,6 +20,8 @@ jobs:
       with:
         primary-key: nix-store
         restore-prefixes-first-match: nix-store
+        # Collect garbage until store is at most 2GB before saving cache
+        gc-max-store-size: 2G
         
     - name: Run 1 - Measure initial build time
       run: |
