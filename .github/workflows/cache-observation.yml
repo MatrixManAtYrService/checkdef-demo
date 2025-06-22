@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main, master ]
 
+permissions:
+  contents: read
+
 jobs:
   observe-cache:
     runs-on: ubuntu-latest
@@ -14,15 +17,15 @@ jobs:
     - name: Install Nix
       uses: DeterminateSystems/nix-installer-action@v13
 
-    - name: Cache Nix store
-      uses: actions/cache@v4
+    - name: Restore Nix cache
+      uses: actions/cache/restore@v4
       with:
         path: |
           ~/.cache/nix
           /nix/store
-        key: nix-store
+        key: nix-store-${{ hashFiles('**/flake.lock') }}
         restore-keys: |
-          nix-store
+          nix-store-
         
     - name: Run 1 - Measure initial build time
       run: |
@@ -59,4 +62,13 @@ jobs:
         grep "building" run1.log | head -5 || echo "None"
         echo ""
         echo "Lines containing 'building' in Run 2:"
-        grep "building" run2.log | head -5 || echo "None" 
+        grep "building" run2.log | head -5 || echo "None"
+        
+    - name: Save Nix cache
+      uses: actions/cache/save@v4
+      if: always()
+      with:
+        path: |
+          ~/.cache/nix
+          /nix/store
+        key: nix-store-${{ hashFiles('**/flake.lock') }} 
