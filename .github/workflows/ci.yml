@@ -24,9 +24,9 @@ jobs:
         path: |
           ~/.cache/nix
           /nix/store
-        key: nix-store-${{ hashFiles('**/flake.lock') }}
+        key: nix-store
         restore-keys: |
-          nix-store-
+          nix-store
 
     - name: Show available check targets
       run: |
@@ -85,4 +85,4 @@ jobs:
         path: |
           ~/.cache/nix
           /nix/store
-        key: nix-store-${{ hashFiles('**/flake.lock') }} 
+        key: nix-store 

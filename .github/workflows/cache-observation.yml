@@ -23,9 +23,9 @@ jobs:
         path: |
           ~/.cache/nix
           /nix/store
-        key: nix-store-${{ hashFiles('**/flake.lock') }}
+        key: nix-store
         restore-keys: |
-          nix-store-
+          nix-store
         
     - name: Run 1 - Measure initial build time
       run: |
@@ -71,4 +71,4 @@ jobs:
         path: |
           ~/.cache/nix
           /nix/store
-        key: nix-store-${{ hashFiles('**/flake.lock') }} 
+        key: nix-store 
