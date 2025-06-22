@@ -156,5 +156,31 @@
             };
           };
         });
+
+      devShells = forAllSystems (system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        {
+          default = pkgs.mkShell {
+            buildInputs = with pkgs; [
+              # GitHub CLI for testing workflow dispatch commands
+              gh
+              # Basic development tools
+              git
+              jq
+            ];
+            
+            shellHook = ''
+              echo "🚀 checkdef-demo development shell"
+              echo "Available tools:"
+              echo "  gh     - GitHub CLI for testing workflows"
+              echo "  git    - Git version control"
+              echo "  jq     - JSON processing"
+              echo ""
+              echo "Try: gh workflow list --repo MatrixManAtYrService/checkdef-demo"
+            '';
+          };
+        });
     };
 }
