@@ -25,7 +25,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, checkdef, pyproject-nix, uv2nix, pyproject-build-systems }:
+  outputs = { self, nixpkgs, checkdef, pyproject-nix,uv2nix, pyproject-build-systems }:
     let
       inherit (nixpkgs) lib;
       forAllSystems = lib.genAttrs [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -105,7 +105,7 @@
           };
 
         in
-        rec {
+        let
           # Build the actual Python packages from the workspace
           workspace = uv2nix.lib.workspace.loadWorkspace {
             workspaceRoot = src;
@@ -119,6 +119,8 @@
               (workspace.mkPyprojectOverlay { sourcePreference = "wheel"; })
             ]
           );
+        in
+        rec {
 
           # The main checkdef-demo package containing foo and bar modules
           checkdef-demo = pythonSet.checkdef-demo;
