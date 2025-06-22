@@ -1,0 +1,75 @@
+name: Cache Behavior Demonstration
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  demonstrate-caching:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v13
+
+    - name: Cache Nix store
+      uses: nix-community/cache-nix-action@v6
+      with:
+        primary-key: nix-store
+        restore-prefixes-first-match: nix-
+        paths: |
+          ~/.cache/nix
+          /nix/store
+        
+    - name: Show available check targets
+      run: |
+        echo "Available nix run targets:"
+        nix flake show --json | jq -r '.packages."x86_64-linux" | keys[]' | grep checklist
+        
+    - name: First run - All checks (populate cache)
+      run: |
+        echo "=== FIRST RUN - This should build everything from scratch ==="
+        echo "Running all checks to populate cache..."
+        nix run .#checklist-all -- -v
+        
+    - name: Second run - All checks (should use cache heavily)
+      run: |
+        echo "=== SECOND RUN - This should use cache heavily ==="
+        echo "Running all checks again - should be much faster..."
+        nix run .#checklist-all -- -v
+        
+    - name: Test selective caching - modify foo only
+      run: |
+        echo "=== SELECTIVE CACHING TEST ==="
+        echo "Modifying foo module only..."
+        echo "# Cache invalidation test - $(date)" >> src/foo/__init__.py
+        
+        echo "Running foo tests (should rebuild)..."
+        nix run .#checklist-foo -- -v
+        
+        echo "Running bar tests (should use cache)..."
+        nix run .#checklist-bar -- -v
+        
+    - name: Test selective caching - modify bar only  
+      run: |
+        echo "=== SELECTIVE CACHING TEST (reverse) ==="
+        echo "Modifying bar module only..."
+        echo "# Cache invalidation test - $(date)" >> src/bar/__init__.py
+        
+        echo "Running bar tests (should rebuild)..."
+        nix run .#checklist-bar -- -v
+        
+        echo "Running foo tests (should still use cache)..."
+        nix run .#checklist-foo -- -v
+        
+    - name: Cache analysis
+      run: |
+        echo "=== CACHE ANALYSIS ==="
+        echo "Nix store contents:"
+        du -sh /nix/store | head -20
+        echo ""
+        echo "Recent store entries:"
+        ls -la /nix/store | tail -20 

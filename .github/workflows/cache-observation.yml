@@ -1,0 +1,61 @@
+name: Cache Observation
+
+on:
+  workflow_dispatch:  # Manual trigger for testing
+  push:
+    branches: [ main, master ]
+
+jobs:
+  observe-cache:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@v13
+
+    - name: Cache Nix store
+      uses: nix-community/cache-nix-action@v6
+      with:
+        primary-key: nix-store
+        restore-prefixes-first-match: nix-
+        paths: |
+          ~/.cache/nix
+          /nix/store
+        
+    - name: Run 1 - Measure initial build time
+      run: |
+        echo "=== RUN 1: Initial build (should build from scratch) ==="
+        time nix run .#checklist-all 2>&1 | tee run1.log
+        echo "Run 1 completed at $(date)"
+        
+    - name: Run 2 - Measure cached build time  
+      run: |
+        echo "=== RUN 2: Cached build (should be much faster) ==="
+        time nix run .#checklist-all 2>&1 | tee run2.log
+        echo "Run 2 completed at $(date)"
+        
+    - name: Analyze cache usage
+      run: |
+        echo "=== CACHE ANALYSIS ==="
+        echo "Run 1 cache pulls:"
+        grep -c "copying path.*from.*cache" run1.log || echo "0"
+        echo "Run 1 builds:"
+        grep -c "building" run1.log || echo "0"
+        echo ""
+        echo "Run 2 cache pulls:"  
+        grep -c "copying path.*from.*cache" run2.log || echo "0"
+        echo "Run 2 builds:"
+        grep -c "building" run2.log || echo "0"
+        echo ""
+        echo "Lines containing 'copying path' in Run 1:"
+        grep "copying path.*from.*cache" run1.log | head -5 || echo "None"
+        echo ""
+        echo "Lines containing 'copying path' in Run 2:"
+        grep "copying path.*from.*cache" run2.log | head -5 || echo "None"
+        echo ""
+        echo "Lines containing 'building' in Run 1:"
+        grep "building" run1.log | head -5 || echo "None"
+        echo ""
+        echo "Lines containing 'building' in Run 2:"
+        grep "building" run2.log | head -5 || echo "None" 
