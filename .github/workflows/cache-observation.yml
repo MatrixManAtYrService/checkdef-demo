@@ -2,8 +2,6 @@ name: Cache Observation
 
 on:
   workflow_dispatch:  # Manual trigger for testing
-  push:
-    branches: [ main, master ]
 
 permissions:
   contents: read
