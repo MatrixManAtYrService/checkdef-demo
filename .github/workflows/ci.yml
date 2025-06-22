@@ -18,11 +18,12 @@ jobs:
     - name: Cache Nix store
       uses: nix-community/cache-nix-action@v6
       with:
-        primary-key: nix-store
-        restore-prefixes-first-match: nix-
+        # More conservative caching - only cache nix cache dir, not the store itself
+        # This avoids potential permission issues with /nix/store
+        primary-key: nix-cache-${{ runner.os }}
+        restore-prefixes-first-match: nix-cache-
         paths: |
           ~/.cache/nix
-          /nix/store
         
     - name: Show available check targets
       run: |
