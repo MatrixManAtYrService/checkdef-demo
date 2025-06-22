@@ -16,15 +16,15 @@ jobs:
       uses: DeterminateSystems/nix-installer-action@v13
 
     - name: Cache Nix store
-      uses: nix-community/cache-nix-action@v6
+      uses: actions/cache@v4
       with:
-        # More conservative caching - only cache nix cache dir, not the store itself
-        # This avoids potential permission issues with /nix/store
-        primary-key: nix-cache-${{ runner.os }}
-        restore-prefixes-first-match: nix-cache-
-        paths: |
+        path: |
           ~/.cache/nix
-        
+          /nix/store
+        key: nix-store
+        restore-keys: |
+          nix-store
+
     - name: Show available check targets
       run: |
         echo "Available nix run targets:"
