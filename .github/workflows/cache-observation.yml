@@ -15,17 +15,13 @@ jobs:
     - uses: actions/checkout@v4
     
     - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@v13
+      uses: nixbuild/nix-quick-install-action@v30
 
-    - name: Restore Nix cache
-      uses: actions/cache/restore@v4
+    - name: Restore and save Nix store
+      uses: nix-community/cache-nix-action@v6
       with:
-        path: |
-          ~/.cache/nix
-          /nix/store
-        key: nix-store
-        restore-keys: |
-          nix-store
+        primary-key: nix-${{ runner.os }}-${{ hashFiles('**/flake.lock') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-
         
     - name: Run 1 - Measure initial build time
       run: |
@@ -62,13 +58,4 @@ jobs:
         grep "building" run1.log | head -5 || echo "None"
         echo ""
         echo "Lines containing 'building' in Run 2:"
-        grep "building" run2.log | head -5 || echo "None"
-        
-    - name: Save Nix cache
-      uses: actions/cache/save@v4
-      if: always()
-      with:
-        path: |
-          ~/.cache/nix
-          /nix/store
-        key: nix-store 
+        grep "building" run2.log | head -5 || echo "None" 
